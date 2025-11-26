@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Promises!</title>
+        <link rel="stylesheet" href="style.css" />
+        <script src="utils.js" defer></script>
+        <script src="db.js" defer></script>
+        <script src="script.js" defer></script>
+    </head>
+    <body>
+        <form id="test-form" action="">
+            <div class="input-wrapper">
+                <label for="input-first-name">First Name</label>
+                <input
+                    id="input-first-name"
+                    name="first-name"
+                    type="text"
+                    pattern="[A-Za-z \-]+"
+                    maxlength="10"
+                    required
+                    autofocus
+                />
+            </div>
+            <div class="input-wrapper">
+                <label for="input-last-name">Last Name</label>
+                <input
+                    id="input-last-name"
+                    name="last-name"
+                    type="text"
+                    pattern="[A-Za-z \-]+"
+                    maxlength="10"
+                />
+            </div>
+            <div class="input-wrapper">
+                <label for="input-email">Email</label>
+                <input type="email" name="email" id="input-email" />
+            </div>
+            <div class="actions-group">
+                <button type="reset">Clear Form</button>
+                <button type="submit">Submit</button>
+            </div>
+            <div class="center"><span id="status-message"></span></div>
+        </form>
+        <dialog popover id="auth-modal">
+            <form id="auth-form" action="">
+                <div class="input-wrapper">
+                    <label for="input-auth-pin">PIN</label>
+                    <input
+                        type="password"
+                        id="input-auth-pin"
+                        name="pin"
+                        required
+                    />
+                </div>
+                <div class="actions-group">
+                    <button
+                        type="button"
+                        id="auth-form-cancel"
+                        popovertarget="auth-modal"
+                        popovertargetaction="hide"
+                    >
+                        Cancel
+                    </button>
+                    <button type="submit">Authenticate</button>
+                </div>
+            </form>
+        </dialog>
+    </body>
+</html>

@@ -1,0 +1,139 @@
+:root {
+    color-scheme: dark light;
+
+    --token-dark: #222;
+    --token-light: #ddd;
+
+    --token-red: firebrick;
+    --token-green: forestgreen;
+
+    --clr-surface-primary: var(--token-dark);
+    --clr-on-surface-primary: var(--token-light);
+    --clr-border: color-mix(in hsl, currentColor 50%, transparent);
+    --clr-error: color-mix(
+        in hsl,
+        var(--clr-on-surface-primary) 30%,
+        var(--token-red)
+    );
+    --clr-success: color-mix(
+        in hsl,
+        var(--clr-on-surface-primary) 30%,
+        var(--token-green)
+    );
+
+    @media (prefers-color-scheme: light) {
+        --clr-surface-primary: var(--token-light);
+        --clr-on-surface-primary: var(--token-dark);
+    }
+
+    --border-radius: 4px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+
+    font-family: system-ui;
+    color: var(--clr-on-surface-primary);
+    background: var(--clr-surface-primary);
+}
+
+button,
+input:not(:is([type="checkbox"], [type="radio"])) {
+    font-size: 1rem;
+    padding: var(--_padding-block, 0.5rem) var(--_padding-inline, 1rem);
+    border-radius: var(--border-radius);
+    border: var(--_border-size, 2px) solid var(--clr-border);
+    background: var(--clr-surface-primary);
+}
+
+button {
+    cursor: pointer;
+}
+
+.input-wrapper:not(:has(input[type="checkbox"]), :has(input[type="radio"])) {
+    --_padding-block: 0.5rem;
+    --_padding-inline: 1rem;
+    --_border-size: 2px;
+
+    position: relative;
+
+    padding-top: 1.5rem;
+
+    label {
+        --_padding: 0.3rem;
+
+        font-size: 0.8em;
+
+        position: absolute;
+        top: 0.5rem;
+        left: calc(
+            var(--_padding-inline) - var(--_padding) + var(--_border-size)
+        );
+
+        padding: var(--_padding);
+        background: var(--clr-surface-primary);
+    }
+    input {
+        font-size: 1.2em;
+        width: 100%;
+    }
+}
+
+.input-wrapper:has(input[required]) label::after {
+    content: " *";
+}
+.input-wrapper:has(input[required]:not(:valid)) label::after {
+    color: var(--clr-error);
+}
+
+input:invalid {
+    border-color: var(--clr-error);
+}
+.success {
+    color: var(--clr-success);
+}
+.error {
+    color: var(--clr-error);
+}
+
+.actions-group {
+    width: 100%;
+    display: flex;
+    gap: 1em;
+    padding: 1em;
+    justify-content: space-around;
+    & > * {
+        flex: 1;
+    }
+}
+
+.center {
+    margin: 0 auto;
+    text-align: center;
+}
+
+dialog {
+    margin: auto;
+    padding: 2rem;
+
+    border-radius: var(--border-radius);
+    border: var(--_border-size, 2px) solid
+        color-mix(in hsl, currentColor 50%, transparent);
+    background-color: var(--clr-surface-primary);
+
+    &::backdrop {
+        background-color: color-mix(
+            in hsl,
+            var(--clr-surface-primary) 80%,
+            transparent
+        );
+        backdrop-filter: blur(2px);
+    }
+}
