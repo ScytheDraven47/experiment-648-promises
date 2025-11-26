@@ -2,7 +2,7 @@
  *
  * @returns {{isAuthenticated; boolean, message?: string}}
  */
-function checkPin(resolve, reject) {
+function checkPin() {
   // const result = confirm("Do you authenticate?");
 
   // if (result) {
@@ -16,27 +16,30 @@ function checkPin(resolve, reject) {
   //   message: "User cancelled",
   // };
 
-  new Promise((resolve, reject) => {});
+  return new Promise((resolve, reject) => {
+    const $modal = document.querySelector("#auth-modal");
+    const $authForm = $modal.querySelector("#auth-form");
+    const $pinInput = $authForm.querySelector("#input-auth-pin");
 
-  const $modal = document.querySelector("#auth-modal");
-  const $authForm = $modal.querySelector("#auth-form");
-  const $pinInput = $authForm.querySelector("#input-auth-pin");
+    async function handleAuthFormSubmit(e) {
+      e.preventDefault();
+      const pin = $pinInput.value;
+      const result = await dbAuthentication({ pin });
+      if (result.isAuthenticated) {
+        resolve(result);
+      } else {
+        reject(result?.message);
+      }
 
-  async function handleAuthFormSubmit(e) {
-    e.preventDefault();
-    const pin = $pinInput.value;
-    const result = await dbAuthentication(pin);
-    if (result.isAuthenticated) {
-      // resolve(result);
-    } else {
-      // reject(result);
+      $authForm.removeEventListener("submit", handleAuthFormSubmit);
+      $authForm.reset();
+      $modal.close();
     }
-    $authForm.removeEventListener("submit", handleAuthFormSubmit);
-  }
 
-  $modal.showModal();
-  $pinInput.focus();
-  $authForm.addEventListener("submit", handleAuthFormSubmit);
+    $modal.showModal();
+    $pinInput.focus();
+    $authForm.addEventListener("submit", handleAuthFormSubmit);
+  });
 }
 
 /**
@@ -86,6 +89,32 @@ function parseValidityState(validity) {
   };
 }
 
+/**
+ *
+ * @param {HTMLFormElement} $form
+ */
+function checkHTMLValidation($form) {
+  /**
+   * @type {{name: string, isValid: boolean, message?: string}[]} Result of parseValidityState + name
+   */
+  let inputs = [];
+  Array.from($form.querySelectorAll("input")).map(({ validity, name }) => ({
+    name,
+    ...parseValidityState(validity),
+  }));
+  return inputs.reduce(
+    (prev, curr) => {
+      if (curr.isValid) return prev;
+
+      return {
+        isValid: false,
+        message: prev.message + `\n${curr.name}: ${curr?.message}`,
+      };
+    },
+    { isValid: true, message: "" },
+  );
+}
+
 function toggleFormButtonsEnabled($form, shouldEnable) {
   Array.from(
     $form.querySelectorAll("button:where([type=submit],[type=reset])"),
@@ -126,6 +155,8 @@ function handleFormSubmit(e) {
   formPromiseChain(e);
 }
 
+/*** Strategies ***/
+
 function formBranching(e) {
   const $form = e.currentTarget;
   toggleFormButtonsEnabled($form, false);
@@ -151,13 +182,7 @@ function formPromiseChain(e) {
       }
       updateStatus("");
     })
-    .then(() => {
-      const result = checkPin();
-      if (!result.isAuthenticated) {
-        throw new Error(result?.message);
-      }
-      updateStatus("Authenticated!");
-    })
+    .then(checkPin)
     .then(() => {
       updateStatus("Saved!", "success");
     })
@@ -167,30 +192,4 @@ function formPromiseChain(e) {
     .finally(() => {
       toggleFormButtonsEnabled($form, true);
     });
-}
-
-/**
- *
- * @param {HTMLFormElement} $form
- */
-function checkHTMLValidation($form) {
-  /**
-   * @type {{name: string, isValid: boolean, message?: string}[]} Result of parseValidityState + name
-   */
-  let inputs = [];
-  Array.from($form.querySelectorAll("input")).map(({ validity, name }) => ({
-    name,
-    ...parseValidityState(validity),
-  }));
-  return inputs.reduce(
-    (prev, curr) => {
-      if (curr.isValid) return prev;
-
-      return {
-        isValid: false,
-        message: prev.message + `\n${curr.name}: ${curr?.message}`,
-      };
-    },
-    { isValid: true, message: "" },
-  );
 }

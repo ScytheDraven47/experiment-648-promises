@@ -27,6 +27,7 @@ async function dbCoinToss() {
 async function dbAuthentication({ pin }) {
   await sleep(DATABASE_DELAY);
 
+  console.log(pin);
   if (pin === "1234") {
     return {
       isAuthenticated: true,
