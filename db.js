@@ -20,6 +20,10 @@ async function dbCoinToss() {
   };
 }
 
+/**
+ *
+ * @returns {{isAuthenticated: boolean, message?: string}}
+ */
 async function dbAuthentication({ pin }) {
   await sleep(DATABASE_DELAY);
 
