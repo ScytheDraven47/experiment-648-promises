@@ -3,19 +3,6 @@
  * @returns {{isAuthenticated; boolean, message?: string}}
  */
 function checkPin() {
-  // const result = confirm("Do you authenticate?");
-
-  // if (result) {
-  //   return {
-  //     isAuthenticated: true,
-  //   };
-  // }
-
-  // return {
-  //   isAuthenticated: false,
-  //   message: "User cancelled",
-  // };
-
   return new Promise((resolve, reject) => {
     const $modal = document.querySelector("#auth-modal");
     const $authForm = $modal.querySelector("#auth-form");
@@ -149,47 +136,140 @@ const updateStatus = (message, status) => {
   }
 };
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
-  formPromiseChain(e);
+  await formEffectPipe(e);
 }
 
 /*** Strategies ***/
 
-function formBranching(e) {
-  const $form = e.currentTarget;
-  toggleFormButtonsEnabled($form, false);
+/**
+ * Previous step worked, provides result
+ * @param {any} value The result
+ * @returns
+ */
+const Success = (value) => ({ type: "Success", value });
+
+/**
+ * Something went wrong, provides error
+ * @param {any} error The error
+ * @returns
+ */
+const Failure = (value) => ({ type: "Failure", value });
+
+/**
+ * Store the async side effect but don't run it
+ * @param {Function} cmd The side effect to be run
+ * @param {Function} next The next step (on Success)
+ * @returns
+ */
+const Command = (cmd, next) => ({ type: "Command", cmd, next });
+
+/**
+ * Combines an effect with the next step, based on outcome
+ * @param {Function} effect The first function to run
+ * @param {Function} fn The next function to run
+ * @returns
+ */
+const chain = (effect, fn) => {
+  console.log({ effect, fn });
+  switch (effect.type) {
+    case "Success":
+      return fn(effect.value);
+    case "Failure":
+      return effect;
+    case "Command":
+      const next = (result) => chain(effect.next(result), fn);
+      return Command(effect.cmd, next);
+  }
+};
+
+/**
+ * Uses {@link chain} to run effects in a sequence
+ * @param  {...any} fns All of the functions to chain
+ * @returns
+ */
+const effectPipe =
+  (...fns) =>
+  (start) =>
+    fns.reduce(chain, Success(start));
+
+/**
+ * Runs a Command
+ * @param {Function} effect A side effect to run
+ * @returns
+ */
+async function runEffect(effect) {
+  while (effect.type === "Command") {
+    try {
+      effect = effect.next(await effect.cmd());
+    } catch (e) {
+      return Failure(e);
+    }
+  }
+  return effect;
 }
 
-function formPromiseChain(e) {
+function checkHTMLValidationEffect($form) {
+  const result = checkHTMLValidation($form);
+  return result.isValid ? Success(result) : Failure(result?.message);
+}
+
+async function dbCoinTossWrapper() {
+  const result = await dbCoinToss();
+  updateStatus(
+    result.isValid ? "" : "Coin toss failed!",
+    result.isValid ? "success" : "error",
+  );
+  return result;
+}
+
+const dbCoinTossCmd = () =>
+  Command(
+    () => dbCoinTossWrapper(),
+    (result) => Success(result),
+  );
+
+const dbCoinTossEffect = (result) =>
+  result.isValid ? Success(result) : Failure(result?.message);
+
+async function checkPinWrapper() {
+  const result = await checkPin();
+  updateStatus(
+    result.isAuthenticated ? "Authenticated!" : "Authentication Failed!",
+    result.isAuthenticated ? "success" : "error",
+  );
+  return result;
+}
+
+const checkPinCmd = () =>
+  Command(
+    () => checkPinWrapper(),
+    (result) => Success(result),
+  );
+
+const checkPinEffect = (result) =>
+  result.isAuthenticated ? Success(result) : Failure(result?.message);
+
+function saveForm() {
+  updateStatus("Saved!", "success");
+  toggleFormButtonsEnabled(true);
+  return Success("yay!");
+}
+
+const formEffectPipeFlow = ($form) =>
+  effectPipe(
+    checkHTMLValidationEffect,
+    () => dbCoinTossCmd(),
+    dbCoinTossEffect,
+    () => checkPinCmd(),
+    checkPinEffect,
+    saveForm,
+  )($form);
+
+async function formEffectPipe(e) {
   const $form = e.currentTarget;
   toggleFormButtonsEnabled($form, false);
-  new Promise((resolve, reject) => {
-    const result = checkHTMLValidation($form);
-
-    if (!result.isValid) {
-      reject("Failed HTML validation!");
-    }
-
-    resolve();
-  })
-    .then(async () => {
-      updateStatus("Fetching from DB...");
-      const result = await dbCoinToss();
-      if (!result.isValid) {
-        throw new Error(result?.message);
-      }
-      updateStatus("");
-    })
-    .then(checkPin)
-    .then(() => {
-      updateStatus("Saved!", "success");
-    })
-    .catch((message) => {
-      updateStatus(message, "error");
-    })
-    .finally(() => {
-      toggleFormButtonsEnabled($form, true);
-    });
+  await runEffect(formEffectPipeFlow($form));
 }
