@@ -173,7 +173,6 @@ const Command = (cmd, next) => ({ type: "Command", cmd, next });
  * @returns
  */
 const chain = (effect, fn) => {
-  console.log({ effect, fn });
   switch (effect.type) {
     case "Success":
       return fn(effect.value);
@@ -201,13 +200,21 @@ const effectPipe =
  * @returns
  */
 async function runEffect(effect) {
+  console.log("--- Starting pipeline ---");
   while (effect.type === "Command") {
+    const start = performance.now();
     try {
-      effect = effect.next(await effect.cmd());
+      const result = await effect.cmd();
+      const duration = (performance.now() - start).toFixed(1);
+      console.log(`✅ [${effect.cmd.name}] completed in ${duration} ms`);
+
+      effect = effect.next(result);
     } catch (e) {
+      console.error(`❌ [${effect.cmd.name}] failed: `, e);
       return Failure(e);
     }
   }
+  console.log("--- Pipeline finished ---");
   return effect;
 }
 
@@ -254,7 +261,7 @@ const checkPinEffect = (result) =>
 
 function saveForm() {
   updateStatus("Saved!", "success");
-  toggleFormButtonsEnabled(true);
+  toggleFormButtonsEnabled(document.querySelector("#test-form"), true);
   return Success("yay!");
 }
 
@@ -266,6 +273,7 @@ const formEffectPipeFlow = ($form) =>
     () => checkPinCmd(),
     checkPinEffect,
     saveForm,
+    // No way to do "finally"
   )($form);
 
 async function formEffectPipe(e) {
