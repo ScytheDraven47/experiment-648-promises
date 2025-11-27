@@ -157,11 +157,6 @@ function handleFormSubmit(e) {
 
 /*** Strategies ***/
 
-function formBranching(e) {
-  const $form = e.currentTarget;
-  toggleFormButtonsEnabled($form, false);
-}
-
 function formPromiseChain(e) {
   const $form = e.currentTarget;
   toggleFormButtonsEnabled($form, false);
