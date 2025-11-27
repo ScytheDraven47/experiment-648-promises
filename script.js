@@ -3,19 +3,6 @@
  * @returns {{isAuthenticated; boolean, message?: string}}
  */
 function checkPin() {
-  // const result = confirm("Do you authenticate?");
-
-  // if (result) {
-  //   return {
-  //     isAuthenticated: true,
-  //   };
-  // }
-
-  // return {
-  //   isAuthenticated: false,
-  //   message: "User cancelled",
-  // };
-
   return new Promise((resolve, reject) => {
     const $modal = document.querySelector("#auth-modal");
     const $authForm = $modal.querySelector("#auth-form");
@@ -25,15 +12,16 @@ function checkPin() {
       e.preventDefault();
       const pin = $pinInput.value;
       const result = await dbAuthentication({ pin });
+
+      $authForm.removeEventListener("submit", handleAuthFormSubmit);
+      $authForm.reset();
+      $modal.close();
+
       if (result.isAuthenticated) {
         resolve(result);
       } else {
         reject(result?.message);
       }
-
-      $authForm.removeEventListener("submit", handleAuthFormSubmit);
-      $authForm.reset();
-      $modal.close();
     }
 
     $modal.showModal();
