@@ -3,43 +3,31 @@
  * @returns {{isAuthenticated; boolean, message?: string}}
  */
 function checkPin() {
-  // const result = confirm("Do you authenticate?");
+  const $modal = document.querySelector("#auth-modal");
+  const $authForm = $modal.querySelector("#auth-form");
+  const $pinInput = $authForm.querySelector("#input-auth-pin");
 
-  // if (result) {
-  //   return {
-  //     isAuthenticated: true,
-  //   };
-  // }
-
-  // return {
-  //   isAuthenticated: false,
-  //   message: "User cancelled",
-  // };
-
-  return new Promise((resolve, reject) => {
-    const $modal = document.querySelector("#auth-modal");
-    const $authForm = $modal.querySelector("#auth-form");
-    const $pinInput = $authForm.querySelector("#input-auth-pin");
-
-    async function handleAuthFormSubmit(e) {
-      e.preventDefault();
-      const pin = $pinInput.value;
-      const result = await dbAuthentication({ pin });
-      if (result.isAuthenticated) {
-        resolve(result);
-      } else {
-        reject(result?.message);
-      }
-
-      $authForm.removeEventListener("submit", handleAuthFormSubmit);
-      $authForm.reset();
-      $modal.close();
+  async function handleAuthFormSubmit(e) {
+    e.preventDefault();
+    const pin = $pinInput.value;
+    const result = await dbAuthentication({ pin });
+    if (result.isAuthenticated) {
+      updateStatus("Authenticated!", "success");
+      updateStatus("Saved!", "success");
+      toggleFormButtonsEnabled($form, true);
+    } else {
+      updateStatus(result?.message, "error");
+      toggleFormButtonsEnabled($form, true);
     }
 
-    $modal.showModal();
-    $pinInput.focus();
-    $authForm.addEventListener("submit", handleAuthFormSubmit);
-  });
+    $authForm.removeEventListener("submit", handleAuthFormSubmit);
+    $authForm.reset();
+    $modal.close();
+  }
+
+  $modal.showModal();
+  $pinInput.focus();
+  $authForm.addEventListener("submit", handleAuthFormSubmit);
 }
 
 /**
@@ -152,7 +140,7 @@ const updateStatus = (message, status) => {
 function handleFormSubmit(e) {
   e.preventDefault();
 
-  formPromiseChain(e);
+  formBranching(e);
 }
 
 /*** Strategies ***/
@@ -160,36 +148,24 @@ function handleFormSubmit(e) {
 function formBranching(e) {
   const $form = e.currentTarget;
   toggleFormButtonsEnabled($form, false);
-}
+  const result = checkHTMLValidation($form);
 
-function formPromiseChain(e) {
-  const $form = e.currentTarget;
-  toggleFormButtonsEnabled($form, false);
-  new Promise((resolve, reject) => {
-    const result = checkHTMLValidation($form);
+  if (!result.isValid) {
+    updateStatus("Failed HTML validation!", "error");
+    return;
+  }
 
+  updateStatus("Fetching from DB...");
+  new Promise(async (resolve, reject) => {
+    const result = await dbCoinToss();
     if (!result.isValid) {
-      reject("Failed HTML validation!");
-    }
-
-    resolve();
-  })
-    .then(async () => {
-      updateStatus("Fetching from DB...");
-      const result = await dbCoinToss();
-      if (!result.isValid) {
-        throw new Error(result?.message);
-      }
-      updateStatus("");
-    })
-    .then(checkPin)
-    .then(() => {
-      updateStatus("Saved!", "success");
-    })
-    .catch((message) => {
-      updateStatus(message, "error");
-    })
-    .finally(() => {
+      updateStatus(result?.message, "error");
+      reject(result?.message);
       toggleFormButtonsEnabled($form, true);
-    });
+      return;
+    }
+    updateStatus("");
+
+    checkPin();
+  });
 }
